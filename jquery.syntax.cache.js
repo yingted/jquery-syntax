@@ -13,6 +13,7 @@ Syntax.styles["jquery.syntax.brush.bash-script"] = ["public/base/jquery.syntax.b
 Syntax.styles["jquery.syntax.brush.applescript"] = ["public/base/jquery.syntax.brush.applescript.css"];
 Syntax.styles["jquery.syntax.brush.css"] = ["public/base/jquery.syntax.brush.css.css"];
 Syntax.styles["jquery.syntax.brush.clang"] = ["public/base/jquery.syntax.brush.clang.css"];
+Syntax.styles["jquery.syntax.brush.turing"] = ["public/base/jquery.syntax.brush.turing.css"];
 Syntax.styles["jquery.syntax.brush.python"] = ["public/base/jquery.syntax.brush.python.css"];
 Syntax.styles["jquery.syntax.layout.editor"] = ["public/base/jquery.syntax.layout.editor.css", "public/modern/jquery.syntax.layout.editor.css"];
 Syntax.styles["jquery.syntax.layout.fixed"] = ["public/base/jquery.syntax.layout.fixed.css"];

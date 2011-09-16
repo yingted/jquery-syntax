@@ -24,6 +24,7 @@ Syntax.styles["jquery.syntax.core"] = ["public/bright/jquery.syntax.core.css", "
 Syntax.styles["jquery.syntax.brush.apache"] = ["public/base/jquery.syntax.brush.apache.css"];
 Syntax.styles["jquery.syntax.brush.ocaml"] = ["public/base/jquery.syntax.brush.ocaml.css"];
 Syntax.styles["jquery.syntax.brush.diff"] = ["public/base/jquery.syntax.brush.diff.css"];
+Syntax.styles["jquery.syntax.brush.turing"] = ["public/base/jquery.syntax.brush.turing.css"];
 
 // Theme Configuration
 Syntax.themes["bright"] = ["base"]

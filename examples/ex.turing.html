@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="index.css" type="text/css" media="screen" />
+
+		<script src="jquery-1.6.min.js" type="text/javascript"></script>
+		<script src="../public/jquery.syntax.js" type="text/javascript"></script>
+		<script src="../public/jquery.syntax.cache.js" type="text/javascript"></script>
+
+		<script type="text/javascript">
+			$(function() {
+				jQuery.syntax();
+			});
+		</script>
+	</head>
+	<body>
+		<h1>Syntax: Turing</h1>
+		
+		<pre class="syntax brush-turing">import GUI
+const INF : real := 2e308%&gt; around 1.797e308
+const LARGE : real := 1e75
+const EPSILON : real := 1e-5%theoretically, 0.25 could be epsilon
+var _maxcolour : int := 1
+setscreen ("graphics,offscreenonly;noecho")
+function fdiv (num : real, denom : real) : real
+    if denom = 0 then
+        %Error.Halt ("Division by zero")%eventually commented out
+        result LARGE * sign (num)
+    elsif num + denom = num then
+        result LARGE * sign (num) * sign (denom)
+    else
+        result num / denom
+    end if
+end fdiv
+function safe_round (num : real) : int
+    if num &gt; maxint then
+        result maxint
+    elsif num &lt; minint then
+        result minint
+    else
+        result round (num)
+    end if
+end safe_round
+type m4x4 : array 1 .. 4, 1 .. 4 of real%4x4 matrix
+type vec : array 1 .. 4 of real%4-vector
+type p5n :
+    record
+        c : ^vec
+        n : ^p5n
+    end record
+type p5nl :
+    record
+        c : ^p5n
+        n : ^p5nl
+        clr : int
+    end record
+function t9n (x : real, y : real, z : real) : m4x4%translation
+    var res : m4x4 := init (1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)
+    res (1, 4) := x
+    res (2, 4) := y
+    res (3, 4) := z
+    result res
+end t9n
+function s5g (x : real, y : real, z : real) : m4x4%scaling
+    var res : m4x4 := init (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
+    res (1, 1) := x
+    res (2, 2) := y
+    res (3, 3) := z
+    result res
+end s5g
+function r6nx (a : real) : m4x4%rotation around x
+    var res : m4x4 := init (1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
+    res (2, 2) := cos (a)
+    res (2, 3) := -sin (a)
+    res (3, 2) := sin (a)
+    res (3, 3) := cos (a)
+    result res
+end r6nx
+function r6ny (a : real) : m4x4%rotation around y
+    var res : m4x4 := init (0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1)
+    res (1, 1) := cos (a)
+    res (1, 3) := sin (a)
+    res (3, 1) := -sin (a)
+    res (3, 3) := cos (a)
+    result res
+end r6ny
+function r6nz (a : real) : m4x4%rotation around z
+    var res : m4x4 := init (0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1)
+    res (1, 1) := cos (a)
+    res (1, 2) := -sin (a)
+    res (2, 1) := sin (a)
+    res (2, 2) := cos (a)
+    result res
+end r6nz
+function ppt (n : real, f : real, w : real) : m4x4%projection, near, far, width
+    var res : m4x4 := init (0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0)
+    res (1, 1) := fdiv (2 * n, w)
+    res (2, 2) := res (1, 1)
+    res (3, 3) := fdiv (-f - n, f - n)
+    res (3, 4) := fdiv (-2 * f* n, f - n)
+    result res
+end ppt
+function dotmv (a : m4x4, b : vec) : vec%dot product of m4x4 and vec
+    var arr : vec := init (0, 0, 0, 0)
+    for i : 1 .. 4
+        for j : 1 .. 4
+            arr (i) += b (j) * a(i, j)
+        end for 
+    end for
+    result arr
+end dotmv
+procedure dotmvp (a : m4x4, var b : ^vec)%dot product of m4x4 and vec
+    var arr : ^vec
+    new arr
+    for i : 1 .. 4
+        ^arr (i) := 0
+        for j : 1 .. 4
+            ^arr (i) += ^b (j) * a(i, j)
+        end for 
+    end for
+    free b
+    b := arr
+end dotmvp
+function dotmm (a : m4x4, b : m4x4) : m4x4%dot product of two m4x4
+    var res : m4x4
+    for i : 1 .. 4
+        for j : 1 .. 4
+            res (i, j) := 0
+            for k : 1 .. 4
+                res (i, j) += a (i, k) * b (k, j)
+            end for
+        end for
+    end for
+    result res
+end dotmm
+function h8e (a : vec) : vec%homogenize
+    var res : vec := init (0,0,0,1)
+    res (1) := fdiv (a (1), a (4))
+    res (2) := fdiv (a (2), a (4))
+    res (3) := fdiv (a (3), a (4))
+    result res
+end h8e
+procedure h8ep (a : ^vec)%homogenize
+    ^a (1) := fdiv (^a (1), ^a (4))
+    ^a (2) := fdiv (^a (2), ^a (4))
+    ^a (3) := fdiv (^a (3), ^a (4))
+end h8ep
+procedure h8epoly (poly : ^p5n)
+    var cur := poly
+    loop
+        exit when cur = nil
+        ^(cur-&gt;c) := h8e (^(cur-&gt;c))
+        cur := cur-&gt;n
+    end loop
+end h8epoly
+procedure h8epolyl (p : ^p5nl)
+    var cur := p
+    loop
+        exit when cur = nil
+        h8epoly (cur-&gt;c)
+        cur := cur-&gt;n
+    end loop
+end h8epolyl
+function h8epolyc (poly : ^p5n) : ^p5n
+    var cur := poly
+    var res : ^p5n
+    var out : ^p5n
+    new res
+    out := res
+    out-&gt;n := out
+    loop
+        exit when cur = nil
+        out := out-&gt;n
+        new out-&gt;c
+        new out-&gt;n
+        ^(out-&gt;c) := h8e (^(cur-&gt;c))
+        cur := cur-&gt;n
+    end loop
+    out-&gt;n := nil
+    result res
+end h8epolyc
+procedure drawpoly (poly : ^p5n, c : int)%using orthogonal projection
+    import GUI, fdiv, safe_round
+    if poly = nil then
+        return
+    end if
+    var n : int := 0
+    var cur := poly
+    loop
+        exit when (cur = nil | cur-&gt;n = poly)
+        cur := cur-&gt;n
+        n := n + 1
+    end loop
+    var x : array 1 .. n of int
+    var y : array 1 .. n of int%last one is depth
+    cur := poly
+    n := 0
+    loop
+        exit when (cur = nil | cur-&gt;n = poly)
+        n := n + 1
+        x (n) := safe_round (fdiv (^(cur-&gt;c) (1), ^(cur-&gt;c) (4)))
+        y (n) := safe_round (fdiv (^(cur-&gt;c) (2), ^(cur-&gt;c) (4)))
+        %put "(", x (n), ",", y (n), ");" ..
+        cur := cur-&gt;n
+    end loop
+    %put ""
+    Draw.FillPolygon (x, y, n, c)
+end drawpoly
+procedure drawpoly_debug (poly : ^p5n, c : int)%using orthogonal projection
+    import GUI, fdiv, safe_round
+    if poly = nil then
+        return
+    end if
+    var n : int := 0
+    var cur := poly
+    loop
+        exit when cur = nil
+        cur := cur-&gt;n
+        n := n + 1
+        exit when cur = poly
+    end loop
+    var x : array 1 .. n of int
+    var y : array 1 .. n of int%last one is depth
+    cur := poly
+    n := 0
+    loop
+        exit when cur = nil
+        n := n + 1
+        x (n) := safe_round (^(cur-&gt;c) (1) + maxx / 2)
+        y (n) := safe_round (^(cur-&gt;c) (2) + maxy / 2)
+        put "(", x (n), ",", y (n), ");" ..
+        cur := cur-&gt;n
+        exit when cur = poly
+    end loop
+    put ""
+    Draw.FillPolygon (x, y, n, c)
+end drawpoly_debug
+procedure dumpp5n (poly : ^p5n)
+    put "(" ..
+    var cur := poly
+    if cur = nil then
+        put ")" ..
+        return
+    else
+        put "(" ..
+    end if
+    loop
+        for i : 1 .. 4
+            put ^(cur-&gt;c) (i) ..
+            if i &lt; 4 then
+                put "," ..
+            else
+                put ")" ..
+            end if
+        end for
+        exit when cur-&gt;n = nil | cur-&gt;n = poly
+        put ",(" ..
+        cur := cur-&gt;n
+    end loop
+    put ")" ..
+end dumpp5n
+procedure dotpoly (poly : ^p5n, transform : m4x4)
+    var cur := poly
+    loop
+        exit when cur = nil
+        ^(cur-&gt;c) := dotmv (transform, ^(cur-&gt;c))
+        cur := cur-&gt;n
+    end loop
+end dotpoly
+function dotpolyc (poly : ^p5n, transform : m4x4) : ^p5n
+    var ptr := poly
+    var cur : ^p5n
+    var res : ^p5n
+    new cur
+    res := cur
+    if ptr = nil then
+        result nil
+    end if
+    loop
+        new cur-&gt;n
+        new cur-&gt;c
+        ^(cur-&gt;c) := dotmv (transform, ^(ptr-&gt;c))
+        ptr := ptr-&gt;n
+        exit when ptr = nil
+        cur := cur-&gt;n
+    end loop
+    cur-&gt;n := nil
+    result res
+end dotpolyc
+function r5ep5n (poly : ^p5n) : ^p5n
+    var res : ^p5n := nil
+    var cur : ^p5n := poly
+    loop
+        exit when cur = nil
+        var tmp : ^p5n
+        new tmp
+        tmp-&gt;n := res
+        tmp-&gt;c := cur-&gt;c
+        res := tmp
+        cur := cur-&gt;n
+    end loop
+    result res
+end r5ep5n
+function makepoly (p : array 1 .. *, 1 .. * of real) : ^p5n
+    var res : ^p5n
+    var cur : ^p5n
+    var n : int := sizeof (p) div sizeof (p (1, 1)) div 4
+    var i : int := 1
+    new res
+    cur := res
+    loop
+        new cur-&gt;c
+        for j : 1 .. 4
+            ^(cur-&gt;c) (j) := p (i, j)
+        end for
+        exit when i = n
+        i := i + 1
+        new cur-&gt;n
+        cur := cur-&gt;n
+    end loop
+    cur-&gt;n := nil
+    result res
+end makepoly
+function makepolyli (p : array 1 .. * of ^p5n, c : int) : ^p5nl
+    var res : ^p5nl
+    var cur : ^p5nl
+    new res
+    cur := res
+    cur-&gt;n := cur
+    for i : 1 .. sizeof (p) div sizeof (p (1))
+        cur := cur-&gt;n
+        new cur-&gt;n
+        new cur-&gt;c
+        cur-&gt;c := p (i)
+        cur-&gt;clr := c
+    end for
+    cur-&gt;n := nil
+    result res
+end makepolyli
+function makepolyla (p : array 1 .. * of ^p5n, c : array 1 .. * of int) : ^p5nl
+    var res : ^p5nl
+    var cur : ^p5nl
+    new res
+    cur := res
+    cur-&gt;n := cur
+    for i : 1 .. sizeof (p) div sizeof (p (1))
+        cur := cur-&gt;n
+        new cur-&gt;n
+        new cur-&gt;c
+        cur-&gt;c := p (i)
+        cur-&gt;clr := c (i)
+    end for
+    cur-&gt;n := nil
+    result res
+end makepolyla
+function cross (a : vec, b : vec) : vec
+    var res : vec := init (0, 0, 0, 1)
+    res (1) := a (2) * b (3) - a (3) * b (2)
+    res (2) := a (3) * b (1) - a (1) * b (3)
+    res (3) := a (1) * b (2) - a (2) * b (1)
+    result res
+end cross
+function crossn (a : vec, b : vec) : vec
+    var ih : real := fdiv (1, sqrt (a (1) ** 2 + a (2) ** 2 + a (3) ** 2) * sqrt (b (1) ** 2 + b (2) ** 2 + b (3) ** 2))
+    var res : vec := init (0, 0, 0, 1)
+    res (1) := (a (2) * b (3) - a (3) * b (2)) * ih
+    res (2) := (a (3) * b (1) - a (1) * b (3)) * ih
+    res (3) := (a (1) * b (2) - a (2) * b (1)) * ih
+    result res
+end crossn
+function crossp (a : ^vec, b : ^vec) : ^vec
+    var res : ^vec
+    new res
+    ^res (1) := ^a (2) * ^b (3) - ^a (3) * ^b (2)
+    ^res (2) := ^a (3) * ^b (1) - ^a (1) * ^b (3)
+    ^res (3) := ^a (1) * ^b (2) - ^a (2) * ^b (1)
+    ^res (4) := 1
+    result res
+end crossp
+function crossnp (a : ^vec, b : ^vec) : ^vec
+    var ih : real := fdiv (1, sqrt (^a (1) ** 2 + ^a (2) ** 2 + ^a (3) ** 2) * sqrt (^b (1) ** 2 + ^b (2) ** 2 + ^b (3) ** 2))
+    var res : ^vec
+    new res
+    ^res (1) := (^a (2) * ^b (3) - ^a (3) * ^b (2)) * ih
+    ^res (2) := (^a (3) * ^b (1) - ^a (1) * ^b (3)) * ih
+    ^res (3) := (^a (1) * ^b (2) - ^a (2) * ^b (1)) * ih
+    ^res (4) := 1
+    result res
+end crossnp
+function camera (at : vec, up : vec, eye : vec) : m4x4
+    var res : m4x4 := init (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1)
+    var x : vec := crossn (up, at)
+    var mul : real := fdiv (1, at (4))
+    for i : 1 .. 3
+        res (3, i) := - at (i) * mul
+    end for
+    mul := fdiv (1, eye (4))
+    for i : 1 .. 3
+        res (4, i) := eye (i) * mul
+    end for
+    mul := fdiv (1, up (4))
+    for i : 1 .. 3
+        res (2, i) := up (i) * mul
+    end for
+    for i : 1 .. 3
+        res (1, i) := x (i)
+    end for
+    result res
+end camera
+function add (a : vec, b : vec) : vec
+    var res : vec
+    for i : 1 .. 3
+        res (i) := a (i) * b (4) + b (i) * a (4)
+    end for
+    res (4) := a (4) * b (4)
+    result res
+end add
+function sub (a : vec, b : vec) : vec
+    var res : vec
+    for i : 1 .. 3
+        res (i) := a (i) * b (4) - b (i) * a (4)
+    end for
+    res (4) := a (4) * b (4)
+    result res
+end sub
+function subp (a : ^vec, b : ^vec) : ^vec
+    var res : ^vec
+    new res
+    for i : 1 .. 3
+        ^res (i) := ^a (i) * ^b (4) - ^b (i) * ^a (4)
+    end for
+    ^res (4) := ^a (4) * ^b (4)
+    result res
+end subp
+function dotvv (a : vec, b : vec) : real
+    var res : real := 0
+    for i : 1 .. 3
+        res := res + a (i) * b (i)
+    end for
+    result fdiv (res, a (4) * b (4))
+end dotvv
+function dotvvp (a : ^vec, b : ^vec) : real
+    var res : real := 0
+    for i : 1 .. 3
+        res := res + ^a (i) * ^b (i)
+    end for
+    result fdiv (res, ^a (4) * ^b (4))
+end dotvvp
+procedure dumpMatrix (matrix : m4x4)
+    for i : 1 .. 4
+        for j : 1 .. 4
+            put matrix (i, j), ";" ..
+        end for
+        put ""
+    end for
+end dumpMatrix
+function normal (a : ^vec, m : ^vec, b : ^vec) : ^vec
+    result crossnp (subp (a, m), subp (b, m))
+end normal
+function magnitude (a : vec) : real
+    result sqrt (a (1) ** 2 + a (2) ** 2 + a (3) ** 2)
+end magnitude
+function anglevv (a : ^vec, b : ^vec) : real
+    result fdiv (dotvv (^a, ^b), magnitude (^a) * magnitude (^b))
+end anglevv
+RGB.SetColour (0, 0, 0, 0)%background
+colourback (0)
+RGB.SetColour (1, 1, 1, 1)%foreground
+color (1)
+function colouralloc : int
+    _maxcolour := _maxcolour + 1
+    if maxcolour = 1023 then
+        put "No more colours!"
+        result 1023
+    end if
+    loop
+        exit when _maxcolour &lt;= maxcolour
+        _maxcolour := RGB.AddColour (Rand.Int (0, 255) / 255, Rand.Int (0, 255) / 255, Rand.Int (0, 255) / 255)
+    end loop
+    result _maxcolour
+end colouralloc
+procedure colourfree (clr : int)
+end colourfree
+procedure freep5n (var p : ^p5n)
+    loop
+        exit when p = nil
+        var prev : ^p5n := p
+        free p-&gt;c
+        p := p-&gt;n
+        free prev
+    end loop
+end freep5n
+procedure freep5nl (var p : ^p5nl)
+    loop
+        exit when p = nil
+        var prev : ^p5nl := p
+        freep5n (p-&gt;c)
+        colourfree (p-&gt;clr)
+        p := p-&gt;n
+        free prev
+    end loop
+end freep5nl
+function exposure (x : real) : real
+    result exp (ln (fdiv (1, -1 - x) + 1 + EPSILON) + 0.2)
+end exposure
+const VIEW : vec := init (0, 0, 1, 1)/*
+const CUBE : array 1 .. * of array 1 .. 4, 1 .. 4 of real := init (
+    init (0,0,0,1,0,0,50,1,0,50,50,1,0,50,0,1),
+    init (0,0,0,1,50,0,0,1,50,0,50,1,0,0,50,1),
+    init (0,0,0,1,0,50,0,1,50,50,0,1,50,0,0,1),
+    init (50,50,50,1,50,0,50,1,50,0,0,1,50,50,0,1),
+    init (50,50,50,1,50,50,0,1,0,50,0,1,0,50,50,1),
+    init (50,50,50,1,0,50,50,1,0,0,50,1,50,0,50,1))
+const DODECAHEDRON : array 1 .. * of array 1 .. 5, 1 .. 4 of real := init (
+    init (
+        60.7,0,79.5,1,
+        18.8,57.7,79.5,1,
+        -49.1,35.7,79.5,1,
+        -49.1,-35.7,79.5,1,
+        18.8,-57.7,79.5,1
+    ),init (
+        60.7,0,79.5,1,
+        18.8,57.7,79.5,1,
+        30.4,93.4,18.8,1,
+        79.5,57.7,-18.8,1,
+        98.2,0,18.8,1
+    ),init (
+        18.8,57.7,79.5,1,
+        -49.1,35.7,79.5,1,
+        -79.5,57.7,18.8,1,
+        -30.4,93.4,-18.8,1,
+        30.4,93.4,18.8,1
+    ),init (
+        -49.1,35.7,79.5,1,
+        -49.1,-35.7,79.5,1,
+        -79.5,-57.7,18.8,1,
+        -98.2,0,-18.8,1,
+        -79.5,57.7,18.8,1
+    ),init (
+        -49.1,-35.7,79.5,1,
+        18.8,-57.7,79.5,1,
+        30.4,-93.4,18.8,1,
+        -30.4,-93.4,-18.8,1,
+        -79.5,-57.7,18.8,1
+    ),init (
+        18.8,-57.7,79.5,1,
+        60.7,0,79.5,1,
+        98.2,0,18.8,1,
+        79.5,-57.7,-18.8,1,
+        30.4,-93.4,18.8,1
+    ),init (
+        49.1,35.7,-79.5,1,
+        -18.8,57.7,-79.5,1,
+        -30.4,93.4,-18.8,1,
+        30.4,93.4,18.8,1,
+        79.5,57.7,-18.8,1
+    ),init (
+        -18.8,57.7,-79.5,1,
+        -60.7,0,-79.5,1,
+        -98.2,0,-18.8,1,
+        -79.5,57.7,18.8,1,
+        -30.4,93.4,-18.8,1
+    ),init (
+        -60.7,0,-79.5,1,
+        -10.8,-57.7,-79.5,1,
+        -30.4,-93.4,-18.8,1,
+        -79.5,-57.7,18.8,1,
+        -98.2,0,-18.8,1
+    ),init (
+        -10.8,-57.7,-79.5,1,
+        49.1,-35.7,-79.5,1,
+        79.5,-57.7,-18.8,1,
+        30.4,-93.4,18.8,1,
+        -30.4,-93.4,-18.8,1
+    ),init (
+        49.1,-35.7,-79.5,1,
+        49.1,35.7,-79.5,1,
+        79.5,57.7,-18.8,1,
+        98.2,0,18.8,1,
+        79.5,-57.7,-18.8,1
+    ),init (
+        49.1,35.7,-79.5,1,
+        -18.8,57.7,-79.5,1,
+        -60.7,0,-79.5,1,
+        -10.8,-57.7,-79.5,1,
+        49.1,-35.7,-79.5,1
+    ))
+const b := DODECAHEDRON
+const DODECAHEDRON_HANDEDNESS : array 1 .. * of boolean := init (false,true,true,true,true,true,false,false,false,false,false,true)
+var c : array 1 .. sizeof (b) div sizeof (b (1)) of ^p5n
+var clr : array 1 .. sizeof (b) div sizeof (b (1)) of int
+var sideclr : array 1 .. sizeof (b) div sizeof (b (1)), 1 .. 3 of real
+for i : 1 .. sizeof (b) div sizeof (b (1))
+    c (i) := makepoly (b (i))
+    clr (i) := colouralloc
+    %Turing has a problem - adding a colour can sometimes return an existing one with the same values.
+    %Normally, this is good, but the large number of varying colours causes a huge problem.
+    %Turing has a max of 1024 colours (10-bit) on my system, which isn't enough for all the pixels.
+    %We use flat shading and we remap the colour palette
+    if sizeof (b) = sizeof (CUBE) then
+        dotpoly (c (i), t9n (-25, -25, -25))
+        dotpoly (c (i), r6nz (Math.PI / 20))
+    elsif sizeof (b) = sizeof (DODECAHEDRON) then
+        if DODECAHEDRON_HANDEDNESS (i) then
+            c (i) := r5ep5n (c (i))
+        end if
+        dotpoly (c (i), s5g (0.5,0.5,0.5))
+    end if
+    sideclr (i, 1) := sind (360 / sizeof (b) * sizeof (b (1)) * i) / 2 + 0.5
+    sideclr (i, 2) := sind (360 / sizeof (b) * sizeof (b (1)) * i + 120) / 2 + 0.5
+    sideclr (i, 3) := sind (360 / sizeof (b) * sizeof (b (1)) * i + 240) / 2 + 0.5
+end for
+var a : ^p5nl := makepolyla (c, clr)
+var lsr : vec := init (1, 1, 2, 1)
+lsr (4) := magnitude (lsr)
+lsr := h8e (lsr)
+var at : vec := init (0, 0, 0, 1)
+var up : vec := init (0, 50, 0, 1)
+var eye : vec := init (-50, 0, 0, 1)
+var render : m4x4 := dotmm (
+    t9n (maxx / 2, maxy / 2, 0),
+    dotmm (
+        ppt (5.97, 6, 0.05),
+        t9n (0, 0, 100)
+    )
+)
+var transform : m4x4 := dotmm (
+        r6nz (Math.PI / 140),
+        dotmm (
+            r6ny (Math.PI / 80),
+            r6nx (Math.PI / 30)
+        )
+)
+const FRAMES : int := 400
+const TARGETFPS : int := 60
+%vector
+var start := Time.Elapsed
+for i : 1 .. FRAMES
+    Draw.Cls
+    var poly : ^p5nl := a
+    var n : int := 1
+    loop
+        exit when poly = nil
+        const draw : ^p5n := h8epolyc (dotpolyc (poly-&gt;c, render))
+        if cross (sub (^(draw-&gt;c), ^(draw-&gt;n-&gt;c)), sub (^(draw-&gt;n-&gt;n-&gt;c), ^(draw-&gt;n-&gt;c))) (3) &gt;= 0 then
+            const lum := 0.2 + 0.8 * max (0, dotvv (crossn (sub (^(poly-&gt;c-&gt;c), ^(poly-&gt;c-&gt;n-&gt;c)), sub (^(poly-&gt;c-&gt;n-&gt;n-&gt;c), ^(poly-&gt;c-&gt;n-&gt;c))), lsr))
+            RGB.SetColour (poly-&gt;clr, lum * sideclr (n, 1), lum * sideclr (n, 2), lum * sideclr (n, 3))
+            drawpoly (draw, poly-&gt;clr)
+        end if
+        dotpoly (poly-&gt;c, transform)
+        poly := poly-&gt;n
+        n := n + 1
+    end loop
+    View.Update
+    delay (i * 1000 div TARGETFPS + start - Time.Elapsed)
+end for%the extra delay after the last update ensures a complete frame
+var benchmark_fps : real := Time.Elapsed
+benchmark_fps := 1000 * FRAMES / (benchmark_fps - start)
+put benchmark_fps, " fps out of ", TARGETFPS, " fps (", benchmark_fps * 100 / TARGETFPS,"%)"
+freep5nl (a)%*/
+function straddle (a1, a2, b1, b2 : vec) : boolean
+    result (((a1 (1) - b1 (1)) * (a2 (2) - b1 (2))) - ((a1 (2) - b1 (2)) * (a2 (1) - b1 (1)))) * (((a1 (1) - b2 (1)) * (a2 (2) - b2 (2))) - ((a1 (2) - b2 (2)) * (a2 (1) - b2 (1)))) &lt; 0
+end straddle
+function i7t2d (a1, a2, b1, b2 : vec) : boolean%FIX
+    result straddle (a1, a2, b1, b2) &amp; straddle (b1, b2, a1, a2)
+end i7t2d
+function dir (a1, a2, b1 : ^vec) : int
+    result sign (((^a1 (1) - ^b1 (1)) * (^a2 (2) - ^b1 (2))) - ((^a1 (2) - ^b1 (2)) * (^a2 (1) - ^b1 (1))))
+end dir
+function dir2 (a1, a2, b1 : ^vec) : real
+    result ((^a1 (1) - ^b1 (1)) * (^a2 (2) - ^b1 (2))) - ((^a1 (2) - ^b1 (2)) * (^a2 (1) - ^b1 (1)))
+end dir2
+function yi (a1, a2 : vec, x : real) : real
+    /*for i : 1 .. Rand.Int (30, 60)
+        drawline (round (a1 (1) + maxx / 2), round (a1 (2) + maxy / 2), round (a2 (1) + maxx / 2), round (a2 (2) + maxy / 2), i)
+        drawline (round (x + maxx / 2), round (x + maxy / 2), round (x + maxx / 2), round (x + maxy / 2), i)
+        View.Update
+        delay (16)
+    end for*/
+    if a1 (1) = a2 (1) then
+        put "Warning: determinant of 0"
+        result (a1 (2) + a2 (2)) / 2 
+    end if
+    /*var res := (a1 (1) * a2 (2) - a1 (2) * a2 (1) + (a1 (2) - a2 (2)) * x) / (a1 (1) - a2 (1))
+    for i : 1 .. Rand.Int (40, 100)
+        drawfilloval (round (x + maxx / 2), round (res + maxy / 2), 1, 1, i)
+        View.Update
+        delay (16)
+    end for*/
+    result (a1 (1) * a2 (2) - a1 (2) * a2 (1) + (a1 (2) - a2 (2)) * x) / (a1 (1) - a2 (1))
+end yi
+function i7t (a1, a2, b1, b2 : vec) : array 1 .. 2 of real
+    /*for i : 1 .. Rand.Int (30, 60)
+        drawline (round (a1 (1) + maxx / 2), round (a1 (2) + maxy / 2), round (a2 (1) + maxx / 2), round (a2 (2) + maxy / 2), i)
+        drawline (round (b1 (1) + maxx / 2), round (b1 (2) + maxy / 2), round (b2 (1) + maxx / 2), round (b2 (2) + maxy / 2), i)
+        View.Update
+        delay (16)
+    end for*/
+    var res : array 1 .. 2 of real
+    var det := (a1 (1) - a2 (1)) * (b1 (2) - b2 (2)) - (a1 (2) - a2 (2)) * (b1 (1) - b2 (1))%recomputation, fix
+    if det = 0 then
+        put "Warning: determinant of 0"
+        res (1) := (a1 (1) + a2 (1)) / 2
+        res (2) := (a1 (2) + a2 (2)) / 2
+        result res
+    end if
+    var foo : real := (a1 (1) * a2 (2) - a1 (2) * a2 (1)) / det
+    var bar : real := (b1 (1) * b2 (2) - b1 (2) * b2 (1)) / det
+    res (1) := (b1 (1) - b2 (1)) * foo - (a1 (1) - a2 (1)) * bar
+    res (2) := (b1 (2) - b2 (2)) * foo - (a1 (2) - a2 (2)) * bar
+    /*for i : 1 .. Rand.Int (40, 100)
+        drawfilloval (round (res (1) + maxx / 2), round (res (2) + maxy / 2), 1, 1, i)
+        View.Update
+        delay (16)
+    end for*/
+    result res
+end i7t
+function i7t3d (a1, a2, b1, b2 : vec) : array 1 .. 4 of real
+    var res : array 1 .. 4 of real
+    var foo : array 1 .. 2 of real := i7t (a1, a2, b1, b2)
+    var bar : array 1 .. 4 of vec%not efficient at all
+    res (1) := foo (1)
+    res (2) := foo (2)
+    bar (1) (2) := a1 (3)
+    bar (2) (2) := a2 (3)
+    if a1 (1) ~= a2 (1) then
+        bar (1) (1) := a1 (1)
+        bar (2) (1) := a2 (1)
+        res (3) := yi (bar (1), bar (2), foo (1))
+    else
+        bar (1) (1) := a1 (2)
+        bar (2) (1) := a2 (2)
+        res (3) := yi (bar (1), bar (2), foo (2))
+    end if
+    bar (1) (2) := b1 (3)
+    bar (2) (2) := b2 (3)
+    if b1 (1) ~= b2 (1) then
+        bar (1) (1) := b1 (1)
+        bar (2) (1) := b2 (1)
+        res (4) := yi (bar (1), bar (2), foo (1))
+    else
+        bar (1) (1) := b1 (2)
+        bar (2) (1) := b2 (2)
+        res (4) := yi (bar (1), bar (2), foo (2))
+    end if
+    %put "[", res (1), ",", res (2), ",", res (3), ",", res (4), "]"
+    %quit
+    result res
+end i7t3d
+procedure dumpcp5n (start : ^p5n)
+    var cur := start
+    put "(" ..
+    loop
+        put cheat (int, cur), ":(" ..
+        for i : 1 .. 4
+            if i &lt; 4 then
+                put ^(cur-&gt;c) (i), "," ..
+            else
+                put ^(cur-&gt;c) (i), ")" ..
+            end if
+        end for
+        exit when cur-&gt;n = start or cur-&gt;n = nil
+        put "," ..
+        cur := cur-&gt;n
+    end loop
+    put ")"
+end dumpcp5n
+procedure flashdot (pt : vec, lo, hi : int, r : int)
+    for i : 1 .. Rand.Int (lo, hi)
+        drawfilloval (round (pt (1) + maxx / 2), round (pt (2) + maxy / 2), r, r, i)
+        View.Update
+        delay (16)
+    end for
+end flashdot
+function arctan2 (y : real, x : real) : real
+    if x &lt; 0 then
+        if y &gt;= 0 then
+            result Math.PI + arctan (fdiv (y, x))
+        else
+            result -Math.PI + arctan (fdiv (y, x))
+        end if
+    elsif x &gt; 0 then
+        result arctan (fdiv (y, x))
+    else
+        if y &gt; 0 then
+            result Math.PI / 2
+        elsif y &lt; 0 then
+            result -Math.PI / 2
+        else
+            result 0
+        end if
+    end if
+end arctan2
+function angle (a : ^vec, b : ^vec) : real
+    result (arctan2 (^a (2), ^a (1)) - arctan2 (^b (2), ^b (1))) rem (Math.PI / 2)
+end angle
+function h8sc (poly : ^p5n) : int
+    var turn : real := 0
+    var cur : ^p5n := poly
+    loop
+        turn := turn + angle (subp (cur-&gt;n-&gt;c, cur-&gt;c), subp (cur-&gt;n-&gt;n-&gt;c, cur-&gt;n-&gt;c))
+        cur := cur-&gt;n
+        exit when cur = poly
+    end loop
+    result sign (turn)
+end h8sc
+function h8s (poly : ^p5n) : int
+    var turn : int := 0
+    var cur : ^p5n := poly
+    if poly = nil then
+        result 0
+    end if
+    loop
+        exit when cur-&gt;n = nil
+        cur := cur-&gt;n
+    end loop
+    cur-&gt;n := poly
+    turn := h8sc (poly)
+    cur-&gt;n := nil
+    result turn
+end h8s
+function pnpoly (poly : ^p5n, p : ^vec) : boolean
+    if poly = nil then
+        result false
+    end if
+    var c : boolean := false
+    var cur : ^p5n := poly
+    loop
+        exit when cur-&gt;n = poly | cur-&gt;n = nil
+        c := c xor (((^(cur-&gt;c) (2) &gt; ^p (2)) ~= (^(cur-&gt;n-&gt;c) (2) &gt; ^p (2))) &amp; (^p (1) &lt; (^(cur-&gt;n-&gt;c) (1) - ^(cur-&gt;c) (1)) * (^p (2) - ^(cur-&gt;c) (2)) / (^(cur-&gt;n-&gt;c) (2) - ^(cur-&gt;c) (2)) + ^(cur-&gt;c) (1)) )
+        cur := cur-&gt;n
+    end loop
+    c := c xor (((^(cur-&gt;c) (2) &gt; ^p (2)) ~= (^(cur-&gt;n-&gt;c) (2) &gt; ^p (2))) &amp; (^p (1) &lt; (^(cur-&gt;n-&gt;c) (1) - ^(cur-&gt;c) (1)) * (^p (2) - ^(cur-&gt;c) (2)) / (^(cur-&gt;n-&gt;c) (2) - ^(cur-&gt;c) (2)) + ^(cur-&gt;c) (1)) )
+    result c
+end pnpoly
+function pnpolyi (poly : ^p5n, x, y : int) : boolean
+    if poly = nil then
+        result false
+    end if
+    var c : boolean := false
+    var cur : ^p5n := poly
+    loop
+        exit when cur-&gt;n = poly | cur-&gt;n = nil
+        c := c xor (((^(cur-&gt;c) (2) &gt; y) ~= (^(cur-&gt;n-&gt;c) (2) &gt; y)) &amp; (x &lt; (^(cur-&gt;n-&gt;c) (1) - ^(cur-&gt;c) (1)) * (y - ^(cur-&gt;c) (2)) / (^(cur-&gt;n-&gt;c) (2) - ^(cur-&gt;c) (2)) + ^(cur-&gt;c) (1)))
+        cur := cur-&gt;n
+    end loop
+    c := c xor (((^(cur-&gt;c) (2) &gt; y) ~= (^(poly-&gt;c) (2) &gt; y)) &amp; (x &lt; (^(poly-&gt;c) (1) - ^(cur-&gt;c) (1)) * (y - ^(cur-&gt;c) (2)) / (^(poly-&gt;c) (2) - ^(cur-&gt;c) (2)) + ^(cur-&gt;c) (1)))
+    result c
+end pnpolyi
+function clipPoly (_sp : ^p5n, _cp : ^p5n) : ^p5nl%subject polygon and clipping polygon
+    %for use with the weiler-atherton agm
+    var res : ^p5nl
+    var sp : ^p5n := h8epolyc (_sp)
+    var cp : ^p5n := h8epolyc (_cp)
+    var a : ^p5n := sp
+    var b : ^p5n := cp
+    var cur : ^p5nl
+    var other : ^p5n
+    var is : boolean := false
+    new res
+    cur := res
+    res-&gt;clr := 0
+    loop
+        ^(a-&gt;c) (4) := 0
+        exit when a-&gt;n = nil
+        a := a-&gt;n
+    end loop
+    a-&gt;n := sp%circular for now
+    a := sp
+    loop
+        ^(b-&gt;c) (4) := 0
+        exit when b-&gt;n = nil
+        b := b-&gt;n
+    end loop
+    b-&gt;n := cp
+    b := cp
+    loop
+        %put "target: ", cheat (int, cp)
+        loop
+            /*put cheat (int, b)
+            color (7)
+            put cheat (int, b-&gt;n)
+            View.Update
+            var curpt := a
+            loop
+                exit when curpt-&gt;n = a
+                for i : 1 .. Rand.Int (40, 100)
+                    drawfilloval (round (^(curpt-&gt;c) (1) + maxx / 2), round (^(curpt-&gt;c) (2) + maxy / 2), 2, 2, i)
+                    View.Update
+                    delay (16)
+                end for
+                curpt := curpt-&gt;n
+            end loop
+            curpt := b
+            loop
+                exit when curpt-&gt;n = b
+                for i : 1 .. Rand.Int (40, 100)
+                    drawfilloval (round (^(curpt-&gt;c) (1) + maxx / 2), round (^(curpt-&gt;c) (2) + maxy / 2), 2, 2, i)
+                    View.Update
+                    delay (16)
+                end for
+                curpt := curpt-&gt;n
+            end loop*/
+            if i7t2d (^(a-&gt;c), ^(a-&gt;n-&gt;c), ^(b-&gt;c), ^(b-&gt;n-&gt;c)) then
+                var inter : array 1 .. 4 of real := i7t3d (^(a-&gt;c), ^(a-&gt;n-&gt;c), ^(b-&gt;c), ^(b-&gt;n-&gt;c))
+                is := true
+                /*for i : 1 .. Rand.Int (100,150)
+                    drawfilloval (round (inter (1) + maxx / 2), round (inter (2) + maxy / 2), 4, 4, i)
+                    View.Update
+                    delay (16)
+                end for*/
+                %put (^(a-&gt;c) (1) ~= inter (1) | ^(a-&gt;c) (2) ~= inter (2) | ^(a-&gt;c) (3) ~= inter (3))
+                %put (^(a-&gt;n-&gt;c) (1) ~= inter (1) | ^(a-&gt;n-&gt;c) (2) ~= inter (2) | ^(a-&gt;n-&gt;c) (3) ~= inter (3))
+                if (abs (^(a-&gt;c) (1) - inter (1)) &gt; EPSILON | abs (^(a-&gt;c) (2) - inter (2)) &gt; EPSILON | abs (^(a-&gt;c) (3) - inter (3)) &gt; EPSILON) &amp; (abs (^(a-&gt;n-&gt;c) (1) - inter (1)) &gt; EPSILON | abs (^(a-&gt;n-&gt;c) (2) - inter (2)) &gt; EPSILON | abs (^(a-&gt;n-&gt;c) (3) - inter (3)) &gt; EPSILON) then
+                    var i10na : ^p5n 
+                    new i10na
+                    new i10na-&gt;c
+                    ^(i10na-&gt;c) (1) := inter (1)
+                    ^(i10na-&gt;c) (2) := inter (2)
+                    ^(i10na-&gt;c) (3) := inter (3)
+                    ^(i10na-&gt;c) (4) := 3 + dir (a-&gt;c, a-&gt;n-&gt;c, b-&gt;c)
+                    i10na-&gt;n := a-&gt;n
+                    a-&gt;n := i10na
+                    %put "a: adding ", cheat (int, i10na), " between ", cheat (int, a), " and ", cheat (int, i10na-&gt;n)
+                end if
+                if (abs (^(b-&gt;c) (1) - inter (1)) &gt; EPSILON | abs (^(b-&gt;c) (2) - inter (2)) &gt; EPSILON | abs (^(b-&gt;c) (3) - inter (4)) &gt; EPSILON) &amp; (abs (^(b-&gt;n-&gt;c) (1) - inter (1)) &gt; EPSILON | abs (^(b-&gt;n-&gt;c) (2) - inter (2)) &gt; EPSILON | abs (^(b-&gt;n-&gt;c) (3) - inter (4)) &gt; EPSILON) then
+                    var i10nb : ^p5n 
+                    new i10nb
+                    new i10nb-&gt;c 
+                    ^(i10nb-&gt;c) (1) := inter (1)
+                    ^(i10nb-&gt;c) (2) := inter (2)
+                    ^(i10nb-&gt;c) (3) := inter (4)%not a bug
+                    ^(i10nb-&gt;c) (4) := 3 + dir (a-&gt;c, a-&gt;n-&gt;c, b-&gt;c)
+                    i10nb-&gt;n := b-&gt;n
+                    b-&gt;n := i10nb
+                    %put "b: adding ", cheat (int, i10nb), " between ", cheat (int, b), " and ", cheat (int, i10nb-&gt;n)
+                end if
+                /*put "polygon a: " ..
+                dumpcp5n (a)
+                put "polygon b: " ..
+                dumpcp5n (b)
+                View.Update
+                var ch : string (1)
+                getch (ch)
+                Draw.Cls
+                locate (1, 1)
+                drawline (maxx div 2, 0, maxx div 2, maxy, black)
+                drawline (0, maxy div 2, maxx, maxy div 2, black)
+                drawpoly_debug (sp, 3)
+                drawpoly_debug (cp, 4)
+                View.Update*/
+            end if
+            b := b-&gt;n
+            exit when b = cp
+        end loop
+        b := cp
+        a := a-&gt;n
+        exit when a = sp
+    end loop
+    if ~is then
+        if pnpoly (sp, cp-&gt;c) then
+            if h8sc (sp) &gt; 1 then
+                res-&gt;c := cp
+            else
+                res-&gt;c := sp
+            end if
+            res-&gt;n := nil
+            result res
+        end if
+        result nil
+    end if
+    /*cls
+    put "polygon a:"
+    dumpcp5n (a)
+    put ""
+    drawline (maxx div 2, 0, maxx div 2, maxy, black)
+    drawline (0, maxy div 2, maxx, maxy div 2, black)
+    drawpoly_debug (sp, 3)
+    drawpoly_debug (cp, 4)
+    var curpt := sp
+    loop
+        flashdot (^(curpt-&gt;c), 15, 40, 2)
+        curpt := curpt-&gt;n
+        exit when curpt = sp
+    end loop
+    cls
+    put "polygon b:"
+    dumpcp5n (b)
+    put ""
+    drawline (maxx div 2, 0, maxx div 2, maxy, black)
+    drawline (0, maxy div 2, maxx, maxy div 2, black)
+    drawpoly_debug (sp, 3)
+    drawpoly_debug (cp, 4)
+    curpt := cp
+    loop
+        flashdot (^(curpt-&gt;c), 15, 40, 2)
+        curpt := curpt-&gt;n
+        exit when curpt = cp
+    end loop
+    
+    cls
+    drawline (maxx div 2, 0, maxx div 2, maxy, black)
+    drawline (0, maxy div 2, maxx, maxy div 2, black)
+    drawpoly_debug (sp, 3)
+    drawpoly_debug (cp, 4)
+    */
+    a := sp
+    other := cp
+    cur-&gt;c := nil
+    loop
+        exit when ^(a-&gt;c) (4) = 2 | a-&gt;n = sp
+        a := a-&gt;n
+    end loop%for speed
+    var target : ^vec
+    if a-&gt;n ~= nil then
+        loop%a is list pointer, b is polygon pointer
+            case floor (^(a-&gt;c) (4)) of
+                label 0:
+                    %put "point:" ..
+                    if cur-&gt;c ~= nil then
+                        %put "add," ..
+                        ^(a-&gt;c) (4) := 1
+                        new b-&gt;n
+                        b := b-&gt;n
+                        b-&gt;c := a-&gt;c
+                    end if
+                    %flashdot (^(a-&gt;c), 20, 30, 2)
+                    %put ";" ..
+                label 1:
+                    %put "old:" ..
+                    %flashdot (^(a-&gt;c), 20, 30, 1)
+                    %put ";" ..
+                    exit when abs(^(a-&gt;c) (1) - ^target (1)) &lt;= EPSILON &amp; abs (^(a-&gt;c) (2) - ^target (2)) &lt;= EPSILON
+                label 2:
+                    %put "in:" ..
+                    %flashdot (^(a-&gt;c), 20, 30, 3)
+                    if cur-&gt;c = nil then
+                        %put "start," ..
+                        new cur-&gt;c
+                        b := cur-&gt;c
+                        b-&gt;c := a-&gt;c
+                        loop
+                            exit when abs(^(a-&gt;c) (1) - ^(other-&gt;c) (1)) &lt;= EPSILON &amp; abs (^(a-&gt;c) (2) - ^(other-&gt;c) (2)) &lt;= EPSILON
+                            other := other-&gt;n
+                        end loop
+                        ^(a-&gt;c) (4) := 3
+                        ^(other-&gt;c) (4) := 3
+                        target := a-&gt;c
+                    else
+                        loop
+                            exit when abs(^(a-&gt;c) (1) - ^(other-&gt;c) (1)) &lt;= EPSILON &amp; abs (^(a-&gt;c) (2) - ^(other-&gt;c) (2)) &lt;= EPSILON
+                            other := other-&gt;n
+                        end loop
+                        var tmp := a
+                        a := other
+                        other := tmp
+                        %put "switch," ..
+                        %put "add," ..
+                        ^(a-&gt;c) (4) := 1
+                        ^(other-&gt;c) (4) := 1
+                        new b-&gt;n
+                        b := b-&gt;n
+                        b-&gt;c := a-&gt;c
+                    end if
+                    %put ";" ..
+                label 3:
+                    %put "end:" ..
+                    assert cur-&gt;c ~= nil
+                    loop
+                        exit when abs(^(a-&gt;c) (1) - ^(other-&gt;c) (1)) &lt;= EPSILON &amp; abs (^(a-&gt;c) (2) - ^(other-&gt;c) (2)) &lt;= EPSILON
+                        other := other-&gt;n
+                    end loop
+                    ^(a-&gt;c) (4) := 1
+                    ^(other-&gt;c) (4) := 1
+                    %break off linked list
+                    b-&gt;n := nil
+                    new cur-&gt;n
+                    cur := cur-&gt;n
+                    cur-&gt;c := nil
+                    %flashdot (^(a-&gt;c), 20, 30, 3)
+                    %put ";" ..
+                label 4:
+                    %put "out:" ..
+                    %flashdot (^(a-&gt;c), 20, 30, 3)
+                    if cur-&gt;c ~= nil then
+                        %put "add," ..
+                        loop
+                            exit when abs(^(a-&gt;c) (1) - ^(other-&gt;c) (1)) &lt;= EPSILON &amp; abs (^(a-&gt;c) (2) - ^(other-&gt;c) (2)) &lt;= EPSILON
+                            other := other-&gt;n
+                        end loop
+                        ^(a-&gt;c) (4) := 1
+                        ^(other-&gt;c) (4) := 1
+                        var tmp := a
+                        a := other
+                        other := tmp
+                        new b-&gt;n
+                        b := b-&gt;n
+                        b-&gt;c := a-&gt;c
+                        %put "switch," ..
+                        %put ";" ..
+                    end if
+                label:
+                    Error.Halt ("Not Implemented")
+            end case
+            a := a-&gt;n
+        end loop
+    end if
+    b-&gt;n := nil
+    cur-&gt;n := nil
+    if cur ~= res then
+        cur := res
+        loop
+            exit when cur-&gt;n-&gt;n = nil
+            a := cur-&gt;c
+            loop
+                exit when a = nil
+                ^(a-&gt;c) (4) := 1
+                a := a-&gt;n
+            end loop
+            cur := cur-&gt;n
+        end loop
+        cur-&gt;n := nil
+        result res
+    else
+        result nil
+    end if
+end clipPoly
+/*
+var a : array 1 .. 2 of array 1 .. 3, 1 .. 4 of real := init (
+    init (50, 25, -1, 1, 50, -25, -1, 1, -75, 0, -25, 1),
+    init (-50, 25, -1, 1, 75, 0, -50, 1, -50, -25, -1, 1)
+)
+var b : array 1 .. sizeof (a) div sizeof (a (1)) of ^p5n
+var c : ^p5nl
+drawline (maxx div 2, 0, maxx div 2, maxy, black)
+drawline (0, maxy div 2, maxx, maxy div 2, black)
+for i : 1 .. sizeof (a) div sizeof (a (1))
+    b (i) := makepoly (a (i))
+    if h8s (b (i)) &gt; 0 then%less than 0 for union
+        b (i) := r5ep5n (b (i))
+    end if
+    drawpoly (dotpolyc (b (i), t9n (maxx / 2, maxy / 2, 0)), i + 2)
+end for
+c := clipPoly (b (1), b (2))
+loop
+    exit when c = nil
+    drawpoly (dotpolyc (c-&gt;c, t9n (maxx / 2, maxy / 2, 0)), Rand.Int (40, 100))
+    locate (1, 1)
+    put "polygon: " ..
+    dumpp5n (c-&gt;c)
+    put ";"
+    View.Update
+    c := c-&gt;n
+    var ch : string (1)
+    getch (ch)
+end loop
+*/
+function zr (poly : ^p5n) : array 1 .. 2 of real
+    %not recursive because of performance
+    var cur : ^p5n := poly
+    var res : array 1 .. 2 of real := init (0, 0)
+    if cur = nil then
+        result res
+    end if
+    res (1) := ^(cur-&gt;c) (3)
+    res (2) := ^(cur-&gt;c) (3)
+    loop
+        cur := cur-&gt;n
+        exit when cur = nil
+        res (1) := min (res (1), ^(cur-&gt;c) (3))
+        res (2) := max (res (2), ^(cur-&gt;c) (3))
+        exit when cur = poly
+    end loop
+    result res
+end zr
+function zorderc (main : ^p5n, secondary : ^p5n) : int
+    var a : ^p5n := main
+    var order : int := sign (sign (zr (main) (1) - zr (secondary) (1)) + sign (zr (main) (2) - zr (secondary) (2)))
+    loop
+        var b : ^p5n := secondary
+        loop
+            if i7t2d (^(a-&gt;c), ^(a-&gt;n-&gt;c), ^(b-&gt;c), ^(b-&gt;n-&gt;c)) then
+                var inter := i7t3d (^(a-&gt;c), ^(a-&gt;n-&gt;c), ^(b-&gt;c), ^(b-&gt;n-&gt;c))
+                case order of
+                    label -1:
+                        if inter (3) &lt;= inter (4) then
+                            result 0
+                        end if
+                    label 0:
+                        order := sign (inter (4) - inter (3))
+                        if order = 0 then
+                            result 0
+                        end if
+                    label 1:
+                        if inter (3) &gt;= inter (4) then
+                            result 0
+                        end if
+                end case
+            end if
+            b := b-&gt;n
+            exit when b = secondary
+        end loop
+        a := a-&gt;n
+        exit when a = main
+    end loop
+    result order
+end zorderc
+function zorder (main : ^p5n, secondary : ^p5n) : int
+    var a, b : ^p5n
+    var res : int
+    if main = nil | secondary = nil | main-&gt;n = nil | secondary-&gt;n = nil then
+        result 0
+    end if%order should be undefined anyways
+    a := main
+    loop
+        a := a-&gt;n
+        exit when a-&gt;n = nil
+    end loop
+    b := secondary
+    loop
+        b := b-&gt;n
+        exit when b-&gt;n = nil
+    end loop
+    a-&gt;n := main
+    b-&gt;n := secondary
+    res := zorderc (a, b)
+    a-&gt;n := nil
+    b-&gt;n := nil
+    result res
+end zorder
+function visible (poly : ^p5n, view : ^vec) : boolean
+    result poly ~= nil &amp; poly-&gt;n ~= nil &amp; poly-&gt;n-&gt;n ~= nil &amp; anglevv (normal (poly-&gt;c, poly-&gt;n-&gt;c, poly-&gt;n-&gt;n-&gt;c), view) &gt;= 0
+end visible
+type sec :
+    record
+        c : ^p5nl
+        n : ^sec
+    end record
+function p5nlen (arg : ^p5n) : int
+    var res : int := 0
+    var cur := arg
+    loop
+        exit when cur = nil
+        cur := cur-&gt;n
+        res := res + 1
+    end loop
+    result res
+end p5nlen
+procedure freesec (var cur : ^sec)
+    var next : ^sec
+    loop
+        exit when cur = nil
+        next := cur-&gt;n
+        free cur
+        cur := next
+    end loop
+end freesec
+function seclen (arg : ^sec) : int
+    var res : int := 0
+    var cur := arg
+    loop
+        exit when cur = nil
+        cur := cur-&gt;n
+        res := res + 1
+    end loop
+    result res
+end seclen
+procedure dumpp5nl (s : ^p5nl)
+    if s = nil then
+        put "&lt;&gt;"
+        return
+    end if
+    var cur := s
+    put '&lt;' ..
+    loop
+        dumpp5n (cur-&gt;c)
+        cur := cur-&gt;n
+        exit when cur = s | cur = nil
+        put ',' ..
+    end loop
+    put '&gt;' ..
+end dumpp5nl
+procedure dumpp5nlz (s : ^p5nl)
+    if s = nil then
+        put "&lt;&gt;"
+        return
+    end if
+    var cur := s
+    put '&lt;' ..
+    loop
+        const zrc := zr (cur-&gt;c)
+        put "[", zrc (1), ",", zrc (2), "]" ..
+        cur := cur-&gt;n
+        exit when cur = s | cur = nil
+        put ',' ..
+    end loop
+    put '&gt;' ..
+end dumpp5nlz
+procedure dumpsec (s : ^sec)
+    if s = nil then
+        put "{}"
+        return
+    end if
+    var cur := s
+    put '{' ..
+    loop
+        dumpp5nl (cur-&gt;c)
+        cur := cur-&gt;n
+        exit when cur = s | cur = nil
+        put ',' ..
+    end loop
+    put '}' ..
+end dumpsec
+procedure renderfilter (var p : ^p5nl, m : m4x4)
+    var cur : ^p5nl := p
+    loop
+        exit when cur = nil
+        var pt : ^p5n := cur-&gt;c
+        loop
+            exit when pt = nil
+            if ^(pt-&gt;c) (4) ~= 0 then
+                dotmvp (m, pt-&gt;c)
+                h8ep (pt-&gt;c)
+                ^(pt-&gt;c) (4) := 0
+            end if
+            pt := pt-&gt;n
+        end loop
+        cur := cur-&gt;n
+    end loop
+    cur := p
+    loop
+        exit when cur = nil
+        var pt : ^p5n := cur-&gt;c
+        loop
+            exit when pt = nil
+            ^(pt-&gt;c) (4) := 0
+            pt := pt-&gt;n
+        end loop
+        cur := cur-&gt;n
+    end loop
+end renderfilter
+procedure mergesortllpc (var p : ^p5nl)%unstable implementation
+    if p = nil | p-&gt;n = nil then
+        return
+    end if
+    const A := p
+    var a := A
+    const B := a-&gt;n
+    var b := B
+    var next := b-&gt;n
+    loop
+        exit when next = nil
+        a-&gt;n := next
+        next := next-&gt;n
+        a := a-&gt;n
+        exit when next = nil
+        b-&gt;n := next
+        next := next-&gt;n
+        b := b-&gt;n
+    end loop
+    a-&gt;n := nil
+    b-&gt;n := nil
+    a := A
+    b := B
+    mergesortllpc (a)%deprecate A
+    mergesortllpc (b)%deprecate B
+    if zr (a-&gt;c) (1) &gt; zr (b-&gt;c) (1) | (zr (a-&gt;c) (1) = zr (b-&gt;c) (1) &amp; zr (a-&gt;c) (2) &gt; zr (b-&gt;c) (2)) then
+        p := a
+        a := a-&gt;n
+    else
+        p := b
+        b := b-&gt;n
+        if b = nil then
+            b := a
+            a := nil
+        end if
+    end if
+    var c := p
+    loop
+        exit when a = nil
+        loop
+            exit when b = nil
+            const zra := zr (a-&gt;c)
+            const zrb := zr (b-&gt;c)
+            exit when zrb (1) &lt; zra (1) | (zra (1) = zrb (1) &amp; zrb (2) &lt; zra (2))
+            %put "[", zrb (1), ",", zrb (2), "] &lt;= [", zra (1), ",", zra (2), "]"
+            c-&gt;n := b
+            c := c-&gt;n
+            b := b-&gt;n
+        end loop
+        exit when b = nil
+        loop
+            exit when a = nil
+            const zra := zr (a-&gt;c)
+            const zrb := zr (b-&gt;c)
+            exit when zra (1) &lt; zrb (1) | (zrb (1) = zra (1) &amp; zra (2) &lt; zrb (2))
+            %put "[", zra (1), ",", zra (2), "] &lt;= [", zrb (1), ",", zrb (2), "]"
+            c-&gt;n := a
+            c := c-&gt;n
+            a := a-&gt;n
+        end loop
+    end loop
+    if a = nil then
+        c-&gt;n := b
+    else%b = nil
+        c-&gt;n := a
+    end if
+end mergesortllpc
+function depthsegment (var p : ^p5nl) : ^sec
+    mergesortllpc (p)
+    var res : ^sec
+    var zone : ^sec
+    var append : ^p5nl
+    var cur : ^p5nl := p
+    new res
+    res-&gt;n := res
+    zone := res
+    assert zone-&gt;n = zone
+    if cur = nil then
+        result nil
+    end if
+    var last : real := zr (cur-&gt;c) (1)
+    loop
+        exit when cur = nil
+        const z := zr (cur-&gt;c)
+        if z (1) &gt;= last then%no collision
+            if zone ~= zone-&gt;n then 
+                free append-&gt;n
+            end if
+            zone := zone-&gt;n
+            new zone-&gt;n
+            new zone-&gt;c
+            append := zone-&gt;c
+            append-&gt;n := append
+        end if
+        append := append-&gt;n
+        new append-&gt;n
+        append-&gt;c := cur-&gt;c
+        append-&gt;clr := cur-&gt;clr
+        last := max (last, z (2))
+        cur := cur-&gt;n
+    end loop
+    if zone ~= zone-&gt;n then 
+        free append-&gt;n
+    end if
+    free zone-&gt;n
+    if zone = nil then
+        result nil
+    end if
+    result res
+end depthsegment/*
+var b : array 1 .. * of array 1 .. 4, 1 .. 4 of real := init (
+    init (0,0,0,1,0,0,50,1,0,50,50,1,0,50,0,1),
+    init (0,0,0,1,50,0,0,1,50,0,50,1,0,0,50,1),
+    init (0,0,0,1,0,50,0,1,50,50,0,1,50,0,0,1),
+    init (50,50,50,1,50,0,50,1,50,0,0,1,50,50,0,1),
+    init (50,50,50,1,50,50,0,1,0,50,0,1,0,50,50,1),
+    init (50,50,50,1,0,50,50,1,0,0,50,1,50,0,50,1))
+var c : array 1 .. sizeof (b) div sizeof (b (1)) of ^p5n
+var clr : array 1 .. sizeof (b) div sizeof (b (1)) of int
+var sideclr : array 1 .. sizeof (b) div sizeof (b (1)), 1 .. 3 of real
+for i : 1 .. sizeof (b) div sizeof (b (1))
+    c (i) := makepoly (b (i))
+    clr (i) := colouralloc
+    %Turing has a problem - adding a colour can sometimes return an existing one with the same values.
+    %Normally, this is good, but the large number of varying colours causes a huge problem.
+    %Turing has a max of 1024 colours (10-bit) on my system, which isn't enough for all the pixels.
+    %We use flat shading and we remap the colour palette
+    dotpoly (c (i), t9n (-25, -25, 25))
+    dotpoly (c (i), t9n (0, 0, -50))
+    dotpoly (c (i), r6nx (Math.PI / 30))
+    dotpoly (c (i), r6ny (Math.PI / 20))
+    dotpoly (c (i), r6nz (Math.PI / 20))
+    sideclr (i, 1) := sind (360 / sizeof (b) * sizeof (b (1)) * i) / 2 + 0.5
+    sideclr (i, 2) := sind (360 / sizeof (b) * sizeof (b (1)) * i + 120) / 2 + 0.5
+    sideclr (i, 3) := sind (360 / sizeof (b) * sizeof (b (1)) * i + 240) / 2 + 0.5
+end for
+var a : ^p5nl := makepolyla (c, clr)
+const zones : ^sec := depthsegment (a)
+var section : ^sec := zones
+loop
+    exit when section = nil
+    var cur : ^p5nl := section-&gt;c
+    loop
+        exit when cur = nil
+        var range := zr (cur-&gt;c)
+        put range (1), " to ", range (2)
+        if cur-&gt;n ~= nil then
+            put "order to next: ", zorder (cur-&gt;c, cur-&gt;n-&gt;c)
+        end if
+        cur := cur-&gt;n
+    end loop
+    section := section-&gt;n
+end loop
+const DELAY : int := 200
+var lsr : vec := init (1, 1, 2, 1)
+lsr := h8e (lsr)
+var at : vec := init (0, 0, 0, 1)
+var up : vec := init (0, 50, 0, 1)
+var eye : vec := init (-50, 0, 0, 1)
+var render : m4x4 := dotmm (
+    t9n (maxx / 2, maxy / 2, 0),
+    dotmm (
+        ppt (5.97, 6, 0.05),
+        t9n (0, 0, 100)
+    )
+)
+%vector
+RGB.SetColour (0, 0, 0, 0)%background
+colorback (0)
+RGB.SetColour (1, 1, 1, 1)%foreground
+color (1)
+Draw.Cls
+section := zones
+var n : int := 0
+loop
+    exit when section = nil
+    var poly : ^p5nl := section-&gt;c
+    put section-&gt;c-&gt;clr
+    loop
+        exit when poly = nil
+        var norm : vec
+        var lum : real
+        var draw : ^p5n := h8epolyc (dotpolyc (poly-&gt;c, render))
+        n := n + 1
+        %norm := cross (sub (^(draw-&gt;c), ^(draw-&gt;n-&gt;c)), sub (^(draw-&gt;n-&gt;n-&gt;c), ^(draw-&gt;n-&gt;c)))
+        %if fdiv (dotvv (norm, VIEW) , magnitude (norm) * magnitude (VIEW)) &gt;= 0 then
+            norm := cross (sub (^(poly-&gt;c-&gt;c), ^(poly-&gt;c-&gt;n-&gt;c)), sub (^(poly-&gt;c-&gt;n-&gt;n-&gt;c), ^(poly-&gt;c-&gt;n-&gt;c)))
+            lum := 0.2 + 0.8 * fdiv (dotvv (norm, lsr) , magnitude (norm) * magnitude (lsr))
+            var asdf := poly-&gt;clr
+            RGB.SetColour (poly-&gt;clr, lum * sideclr (n, 1), lum * sideclr (n, 2), lum * sideclr (n, 3))
+            drawpoly (draw, poly-&gt;clr)
+        %end if
+        poly := poly-&gt;n
+        View.Update
+        delay (DELAY)
+    end loop
+    section := section-&gt;n
+end loop
+freep5nl (a)
+section := zones
+freesec (section)%*/
+function splitPoly (a : ^p5n, b : ^p5n) : ^p5nl
+    var res : ^p5nl%max length 4
+    if a = nil | b = nil | a-&gt;n = nil | b-&gt;n = nil | a-&gt;n-&gt;n = nil | b-&gt;n-&gt;n = nil then
+        res-&gt;c := a
+        new res-&gt;n
+        res-&gt;n-&gt;c := b
+        res-&gt;n-&gt;n := nil
+        result res
+    end if
+    const NORM : ^vec := crossnp (normal (a-&gt;c, a-&gt;n-&gt;c, a-&gt;n-&gt;n-&gt;c), normal (b-&gt;c, b-&gt;n-&gt;c, b-&gt;n-&gt;n-&gt;c))
+    
+    result res
+end splitPoly/*
+var a : array 1 .. 2 of array 1 .. 3, 1 .. 4 of real := init (
+    init (50, 25, -1, 1, 50, -25, -1, 1, -75, 0, -25, 1),
+    init (-50, 25, -1, 1, 75, 0, -50, 1, -50, -25, -1, 1)
+)
+var b : array 1 .. sizeof (a) div sizeof (a (1)) of ^p5n
+var c : ^p5nl
+drawline (maxx div 2, 0, maxx div 2, maxy, black)
+drawline (0, maxy div 2, maxx, maxy div 2, black)
+for i : 1 .. sizeof (a) div sizeof (a (1))
+    b (i) := makepoly (a (i))
+    if h8s (b (i)) &gt; 0 then%less than 0 for union
+        b (i) := r5ep5n (b (i))
+    end if
+    drawpoly (dotpolyc (b (i), t9n (maxx / 2, maxy / 2, 0)), i + 2)
+end for
+c := splitPoly (b (1), b (2))
+loop
+    exit when c = nil
+    drawpoly (dotpolyc (c-&gt;c, t9n (maxx / 2, maxy / 2, 0)), Rand.Int (40, 100))
+    locate (1, 1)
+    put "polygon: " ..
+    dumpp5n (c-&gt;c)
+    put ";"
+    View.Update
+    c := c-&gt;n
+    var ch : string (1)
+    getch (ch)
+end loop%*/
+/*
+TODO
+-Add a surface data type, which would be a combination of an array of polygons and a texture
+-Add a scanline renderer and a z-buffer renderer (for screenshots or something)
+-Create an api
+-Correct scan order
+*/</pre>
+	</body>
+</html>
