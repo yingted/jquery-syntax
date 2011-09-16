@@ -4,13 +4,21 @@
   .keyword
     color: #000
     font-weight: bold
+    text-decoration: none
+  .keyword:hover
+    @extend .keyword
+    text-decoration: underline
   .symbol
     color: #00F
   .comment
     color: #00A000
+  .builtin
+    color: #000
+    text-decoration: none
+  .builtin:hover
+    @extend .builtin
+    text-decoration: underline
   //.builtin-constant
     text-decoration: underline
   //.operator
     font-style: italic
-  //.builtin
-    color: #F00
