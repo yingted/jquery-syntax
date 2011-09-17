@@ -13,7 +13,6 @@ Syntax.register('turing',function(brush) {
 	brush.push(Syntax.lib.doubleQuotedString);
 	brush.push(Syntax.lib.stringEscape);
 	brush.push(Syntax.lib.decimalNumber);
-	brush.push(Syntax.lib.hexNumber);
 	brush.push(Syntax.lib.cStyleFunction);
 	brush.processes.keyword=brush.processes.builtin=function (element, match) {
 		return jQuery('<a>').
