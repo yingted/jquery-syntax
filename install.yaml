@@ -3,7 +3,5 @@ prefix: "public"
 # The options for the stylesheet generation
 themes:
   - base
-  - modern
-  - bright
 # Enable minification
 minify: true

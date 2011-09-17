@@ -17,7 +17,7 @@ Syntax.Editor.prototype.getLines = function() {
 	// start of the next complete line (2)
 	var text = "", startChild = 0;
 	for (var i = 0; i < children.length; i += 1) {
-		var childLines = Syntax.innerText([children[i]]).split('\n');
+		var childLines = Syntax.innerText(children[i]).split('\n');
 		
 		if (childLines.length > 1) {
 			childLines[0] = text + childLines[0]; // (2)
@@ -44,8 +44,6 @@ Syntax.Editor.prototype.getLines = function() {
 	}
 	
 	offsets.push(startChild);
-	
-	Syntax.log("getLines", offsets, lines, children);
 	
 	return {lines: lines, offsets: offsets};
 }

@@ -3,11 +3,11 @@
 
 
 Syntax.Editor=function(container,text){this.container=container;this.current=this.getLines();}
-Syntax.Editor.prototype.getLines=function(){var children=this.container.childNodes,lines=[],offsets=[];var text="",startChild=0;for(var i=0;i<children.length;i+=1){var childLines=Syntax.innerText([children[i]]).split('\n');if(childLines.length>1){childLines[0]=text+childLines[0];text=childLines.pop();}else{text+=childLines[0];continue;}
+Syntax.Editor.prototype.getLines=function(){var children=this.container.childNodes,lines=[],offsets=[];var text="",startChild=0;for(var i=0;i<children.length;i+=1){var childLines=Syntax.innerText(children[i]).split('\n');if(childLines.length>1){childLines[0]=text+childLines[0];text=childLines.pop();}else{text+=childLines[0];continue;}
 for(var j=0;j<childLines.length;j+=1){offsets.push(startChild-lines.length);lines.push(childLines[j]);}
 startChild=i+1;}
 if(text!=""){offsets.push(startChild-lines.length);lines.push(text);}else{startChild-=1;}
-offsets.push(startChild);Syntax.log("getLines",offsets,lines,children);return{lines:lines,offsets:offsets};}
+offsets.push(startChild);return{lines:lines,offsets:offsets};}
 Syntax.Editor.prototype.updateChangedLines=function(){var result={};var updated=this.getLines();var i=0,j=0;while(i<this.current.lines.length&&j<updated.lines.length){if(this.current.lines[i]==updated.lines[j]){i+=1;j+=1;}else{break;}}
 result.start=j;i=this.current.lines.length,j=updated.lines.length;while(i>result.start&&j>result.start){if(this.current.lines[i-1]==updated.lines[j-1]){i-=1;j-=1;}else{break;}}
 result.end=j;result.originalEnd=i;result.difference=updated.lines.length-this.current.lines.length;while(result.start>0){if(updated.offsets[result.start]==updated.offsets[result.start-1])
