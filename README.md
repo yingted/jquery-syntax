@@ -1,3 +1,4 @@
+Open working/hlall.html and use it. C-like languages use `clang`.
 # jQuery.Syntax [release-3.0] #
 
 jQuery.Syntax is a light-weight client-side syntax highlighter, which dynamically loads external dependencies (JavaScript & CSS) when required. It uses jQuery to make it cross-browser compatible and to simplify integration.
