@@ -1,0 +1,17 @@
+.syntax .turing .constant {
+  color: black; }
+.syntax .turing .keyword, .syntax .turing .keyword:hover {
+  color: black;
+  font-weight: bold;
+  text-decoration: none; }
+.syntax .turing .keyword:hover, .syntax .turing .keyword:hover {
+  text-decoration: underline; }
+.syntax .turing .symbol {
+  color: blue; }
+.syntax .turing .comment {
+  color: #00a000; }
+.syntax .turing .builtin, .syntax .turing .builtin:hover {
+  color: black;
+  text-decoration: none; }
+.syntax .turing .builtin:hover, .syntax .turing .builtin:hover {
+  text-decoration: underline; }
